@@ -1,5 +1,6 @@
 package com.trimble.cars.web_application.service;
 
+import com.trimble.cars.web_application.exceptions.ResourceNotFoundException;
 import com.trimble.cars.web_application.model.Car;
 import com.trimble.cars.web_application.model.User;
 import com.trimble.cars.web_application.repository.CarRepository;
@@ -29,7 +30,11 @@ public class CarService {
     }
 
     public List<Car> getAllCars() {
-        return carRepository.findAll();
+        List<Car> carList = carRepository.findAll();
+        if(carList==null || carList.size()<0){
+            throw new ResourceNotFoundException("Resource Not available");
+        }
+        return carList;
     }
 
     public List<Car> getCarsByOwner(String username) {

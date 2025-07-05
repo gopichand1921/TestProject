@@ -1,5 +1,6 @@
 package com.trimble.cars.web_application.service;
 
+import com.trimble.cars.web_application.exceptions.BusinessException;
 import com.trimble.cars.web_application.model.Car;
 import com.trimble.cars.web_application.model.Lease;
 import com.trimble.cars.web_application.model.User;
@@ -26,7 +27,7 @@ public class LeaseService {
     public Lease startLease(Long carId, String customerUsername) {
         User customer = userRepository.findByUsername(customerUsername);
         Car car = carRepository.findById(carId).orElseThrow(() -> new RuntimeException("Car not found"));
-        if (!car.getStatus().equals("IDLE")) throw new RuntimeException("Car not available");
+        if (!car.getStatus().equals("IDLE")) throw new BusinessException("Car not available");
         List<Lease> active = leaseRepository.findByStatusAndCustomer("ACTIVE", customer);
         if (active.size() >= 2) throw new RuntimeException("Max 2 leases allowed");
         car.setStatus("ON_LEASE");
