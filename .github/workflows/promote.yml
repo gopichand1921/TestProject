@@ -4,14 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       target_version:
-        description: "Select the target Docker image version"
+        description: "Enter the target Docker image version (e.g., 1.x.x)"
         required: true
-        type: choice
-        options:
-          - 1.0.0
-          - 1.1.0
-          - 1.2.0
-          - 2.0.0
+        type: string
       target_environment:
         description: "Select the target environment"
         required: true
@@ -66,4 +61,4 @@ jobs:
           git push origin HEAD:main
 
       - name: Confirm completion
-        run: echo "✅ Deployment version updated successfully for ${{ github.event.inputs.target_environment }}!"
+        run: echo "✅ Deplo
