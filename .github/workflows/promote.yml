@@ -1,0 +1,69 @@
+name: Promote Deployment Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_version:
+        description: "Select the target Docker image version"
+        required: true
+        type: choice
+        options:
+          - 1.0.0
+          - 1.1.0
+          - 1.2.0
+          - 2.0.0
+      target_environment:
+        description: "Select the target environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - qa
+          - prod
+
+jobs:
+  promote:
+    name: Update Deployment File
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update deployment file
+        run: |
+          ENV=${{ github.event.inputs.target_environment }}
+          VERSION=${{ github.event.inputs.target_version }}
+
+          case "$ENV" in
+            dev)
+              DEPLOYMENT_FILE="deployments/dev/deployment.yml"
+              ;;
+            qa)
+              DEPLOYMENT_FILE="deployments/qa/deployment.yml"
+              ;;
+            prod)
+              DEPLOYMENT_FILE="deployments/prod/deployment.yml"
+              ;;
+            *)
+              echo "❌ Invalid environment: $ENV"
+              exit 1
+              ;;
+          esac
+
+          echo "Updating $DEPLOYMENT_FILE with version $VERSION"
+          sed -i "s|\(image:.*:\).*|\1$VERSION|" "$DEPLOYMENT_FILE"
+
+      - name: Commit and push changes
+        run: |
+          git add deployments/${{ github.event.inputs.target_environment }}/deployment.yml
+          git commit -m "chore: bump image version to ${{ github.event.inputs.target_version }} for ${{ github.event.inputs.target_environment }}"
+          git push origin HEAD:main
+
+      - name: Confirm completion
+        run: echo "✅ Deployment version updated successfully for ${{ github.event.inputs.target_environment }}!"
