@@ -1,0 +1,33 @@
+name: Snyk Security Scan (Feature Branch)
+
+on:
+  push:
+    branches:
+      - 'feature/*'   # triggers only for feature branches
+
+jobs:
+  snyk-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17' # your project version
+
+      - name: Install Snyk CLI
+        uses: snyk/actions/setup@v3
+
+      - name: Authenticate Snyk
+        run: snyk auth "${{ secrets.SNYK_TOKEN }}"
+
+      - name: Run Snyk Test
+        run: snyk test --all-projects
+
+      - name: Run Snyk Monitor (Optional)
+        if: always()
+        run: snyk monitor --all-projects
