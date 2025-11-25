@@ -1,33 +1,56 @@
-name: Snyk Security Scan (Feature Branch)
+name: Feature Branch Pipeline
 
 on:
   push:
     branches:
-      - 'feature/*'   # triggers only for feature branches
+      - 'feature/*'  # Only feature branches
 
 jobs:
-  snyk-scan:
+
+  snyk_scan:
+    name: Snyk Security Scan (Runs First)
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17' # your project version
+          distribution: temurin
+          java-version: 17
 
       - name: Install Snyk CLI
         uses: snyk/actions/setup@v3
 
-      - name: Authenticate Snyk
+      - name: Authenticate with Snyk
         run: snyk auth "${{ secrets.SNYK_TOKEN }}"
 
       - name: Run Snyk Test
         run: snyk test --all-projects
 
-      - name: Run Snyk Monitor (Optional)
+      - name: Run Snyk Monitor
         if: always()
         run: snyk monitor --all-projects
+
+
+  build_job:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: snyk_scan   # 🚀 This ensures Snyk runs FIRST
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Maven Build
+        run: mvn clean install -DskipTests
+
+
+  test_job:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    needs: snyk_scan   # Also waits for Snyk scan
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Tests
+        run: mvn test
