@@ -35,7 +35,7 @@ jobs:
           sudo mv snyk /usr/local/bin/
 
       - name: Authenticate Snyk
-        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+        run: snyk auth ${{ SNYK_TOKEN }}
 
       - name: Find all Maven modules
         id: modules
