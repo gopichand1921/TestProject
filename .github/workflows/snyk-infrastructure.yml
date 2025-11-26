@@ -1,0 +1,59 @@
+name: Snyk Multi-Module Maven Scan
+
+on:
+  push:
+    branches:
+      - "feature/**"
+
+  workflow_dispatch:
+    inputs:
+      branch:
+        type: string
+        description: "Enter feature branch name (example: feature/ABC-123)"
+        required: true
+
+jobs:
+  snyk-maven-modules:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref_name }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Snyk CLI
+        run: |
+          curl -L https://static.snyk.io/cli/latest/snyk-linux -o snyk
+          chmod +x snyk
+          sudo mv snyk /usr/local/bin/
+
+      - name: Authenticate Snyk
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - name: Find all Maven modules
+        id: modules
+        run: |
+          echo "modules=$(find . -name pom.xml | xargs -I {} dirname {} | sort -u | tr '\n' ' ')" >> $GITHUB_OUTPUT
+
+      - name: Run Snyk on each module
+        run: |
+          for module in ${{ steps.modules.outputs.modules }}; do
+            echo "======================================="
+            echo "🔍 Scanning Maven module: $module"
+            echo "======================================="
+
+            snyk test --file="$module/pom.xml" --all-projects --json > "$module-snyk.json" || true
+          done
+
+      - name: Upload all Snyk reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-maven-reports
+          path: "**/*-snyk.json"
