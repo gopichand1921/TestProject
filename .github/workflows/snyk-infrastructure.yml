@@ -1,4 +1,4 @@
-name: Snyk Multi-Module Maven Scan
+name: Snyk Maven Multi-Module Scan
 
 on:
   push:
@@ -9,8 +9,12 @@ on:
     inputs:
       branch:
         type: string
-        description: "Enter feature branch name (example: feature/ABC-123)"
         required: true
+        description: "Enter feature branch name (example: feature/ABC-123)"
+
+env:
+  # Your environment variable
+  SNYK_TOKEN: ${{ secrets.snyk_actions }}
 
 jobs:
   snyk-maven-modules:
@@ -34,25 +38,25 @@ jobs:
           chmod +x snyk
           sudo mv snyk /usr/local/bin/
 
-      - name: Authenticate Snyk
-        run: snyk auth ${{ SNYK_TOKEN }}
+      - name: Authenticate with Snyk
+        run: snyk auth "$SNYK_TOKEN"
 
-      - name: Find all Maven modules
+      - name: Find all Maven modules (pom.xml)
         id: modules
         run: |
           echo "modules=$(find . -name pom.xml | xargs -I {} dirname {} | sort -u | tr '\n' ' ')" >> $GITHUB_OUTPUT
 
-      - name: Run Snyk on each module
+      - name: Run Snyk on each Maven module
         run: |
           for module in ${{ steps.modules.outputs.modules }}; do
             echo "======================================="
             echo "🔍 Scanning Maven module: $module"
             echo "======================================="
 
-            snyk test --file="$module/pom.xml" --all-projects --json > "$module-snyk.json" || true
+            snyk test --file="$module/pom.xml" --json > "$module-snyk.json" || true
           done
 
-      - name: Upload all Snyk reports
+      - name: Upload Snyk reports
         uses: actions/upload-artifact@v4
         with:
           name: snyk-maven-reports
